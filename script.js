@@ -76,7 +76,6 @@ document.addEventListener("DOMContentLoaded", () => {
       "schedule-modal-cancel-btn"
     ),
     scheduleModalSaveBtn: document.getElementById("schedule-modal-save-btn"),
-    // Settings
     userNameInput: document.getElementById("user-name"),
     themeColorInput: document.getElementById("theme-color-input"),
     enableNotificationsBtn: document.getElementById("enable-notifications-btn"),
@@ -91,7 +90,6 @@ document.addEventListener("DOMContentLoaded", () => {
     { resize: true }
   );
 
-  // --- PWA Setup (Dynamic Manifest & Icons) ---
   const setupPWA = () => {
     const createIcon = (s, t, b) => {
       const c = document.createElement("canvas");
@@ -107,8 +105,8 @@ document.addEventListener("DOMContentLoaded", () => {
       x.fillText(t, s / 2, s / 2 + s * 0.05);
       return c.toDataURL();
     };
-    const i192 = createIcon(192, "W", "#f97316"),
-      i512 = createIcon(512, "W", "#f97316");
+    const i192 = createIcon(192, "W", data.settings.themeColor),
+      i512 = createIcon(512, "W", data.settings.themeColor);
     const m = {
       name: "Workout Companion",
       short_name: "Workout",
@@ -125,10 +123,10 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("manifest-link").href = URL.createObjectURL(
       new Blob([JSON.stringify(m)], { type: "application/json" })
     );
-    document.getElementById("apple-touch-icon-link").href = i192;
+    // We link the apple-touch-icon in the HTML now, but you could still set it dynamically if you wanted
+    // document.getElementById('apple-touch-icon-link').href = i192;
   };
 
-  // --- Data & State ---
   const saveData = () =>
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   const getTodayStr = () => new Date().toISOString().split("T")[0];
@@ -136,7 +134,6 @@ document.addEventListener("DOMContentLoaded", () => {
     new Date(d1).toISOString().split("T")[0] ===
     new Date(d2).toISOString().split("T")[0];
 
-  // --- Rendering ---
   const renderAll = () => {
     renderTheme();
     renderStreakAndFreeze();
@@ -298,9 +295,8 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       btn.textContent = "Enable Notifications";
       btn.disabled = false;
-      btn.classList.replace("bg-green-600", "bg-blue-500");
-      btn.classList.replace("bg-red-600", "bg-blue-500");
-      btn.classList.add("hover:bg-blue-600");
+      btn.classList.remove("bg-green-600", "bg-red-600");
+      btn.classList.add("bg-blue-500", "hover:bg-blue-600");
     }
   };
 
@@ -390,7 +386,6 @@ document.addEventListener("DOMContentLoaded", () => {
     dom.distributionChartContainer.innerHTML = chartHTML;
   };
 
-  // --- Modals ---
   const openWorkoutModal = (workoutId = null) => {
     dom.workoutForm.reset();
     if (workoutId) {
@@ -459,7 +454,6 @@ document.addEventListener("DOMContentLoaded", () => {
     saveAndRerender();
   };
 
-  // --- App Logic ---
   const checkAndResetStreak = () => {
     if (!data.lastWorkoutDate) return;
     const today = new Date(),
@@ -487,9 +481,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // --- Notifications ---
   const handleNotificationPermission = async () => {
-    if (!("Notification" in window) || !navigator.serviceWorker) {
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) {
       alert("Push Notifications are not supported in your browser.");
       return;
     }
@@ -540,9 +533,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!workoutNames) {
       console.log(
-        "No workout scheduled for the notification time. Rescheduling for the next day."
+        "No workout scheduled for the notification time. Rescheduling for the next valid day."
       );
-      // Simple reschedule for next day check
       setTimeout(scheduleDailyNotification, 24 * 60 * 60 * 1000);
       return;
     }
@@ -552,8 +544,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }!`;
     const body = `Today's plan: ${workoutNames}. Let's do this! 💪`;
 
-    // This is still a client-side timeout. True push notifications would require a push server.
-    // This is the best we can do for a simple gh-pages deployment.
     const delay = notificationTime.getTime() - now.getTime();
 
     if (delay > 0) {
@@ -561,21 +551,18 @@ document.addEventListener("DOMContentLoaded", () => {
         navigator.serviceWorker.ready.then((reg) => {
           reg.showNotification(title, {
             body,
-            icon: "./apple-touch-icon.png",
+            icon: "./icon.png",
             tag: "workout-reminder",
           });
-          // Reschedule for the next valid workout day
           scheduleDailyNotification();
         });
       }, delay);
       console.log(`Notification scheduled for ${notificationTime}`);
     } else {
-      // If for some reason delay is negative, try again in a minute
       setTimeout(scheduleDailyNotification, 60000);
     }
   };
 
-  // --- Event Listeners ---
   const setupEventListeners = () => {
     dom.navButtons.forEach((btn) =>
       btn.addEventListener("click", () => switchPage(btn.dataset.page))
@@ -590,7 +577,16 @@ document.addEventListener("DOMContentLoaded", () => {
           isSameDay(h.date, today)
         );
         if (firstLogToday) {
-          data.streak++;
+          const yesterday = new Date();
+          yesterday.setDate(today.getDate() - 1);
+          if (
+            data.lastWorkoutDate &&
+            isSameDay(data.lastWorkoutDate, yesterday)
+          ) {
+            data.streak++;
+          } else {
+            data.streak = 1;
+          }
           data.lastWorkoutDate = today.toISOString();
         }
         data.history.push({
@@ -639,7 +635,6 @@ document.addEventListener("DOMContentLoaded", () => {
     dom.modalCancelBtn.addEventListener("click", closeWorkoutModal);
     dom.scheduleModalSaveBtn.addEventListener("click", handleSaveSchedule);
     dom.scheduleModalCancelBtn.addEventListener("click", closeScheduleModal);
-    // Settings Listeners
     dom.userNameInput.addEventListener("change", (e) => {
       data.settings.userName = e.target.value.trim();
       saveAndRerender();
@@ -688,7 +683,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       };
       reader.readAsText(file);
-      e.target.value = ""; // Reset input
+      e.target.value = "";
     });
     dom.resetAppBtn.addEventListener("click", () => {
       if (
@@ -709,7 +704,6 @@ document.addEventListener("DOMContentLoaded", () => {
     checkAndResetStreak();
     setupEventListeners();
     renderAll();
-    // Check current notification permission on load without asking
     if ("permissions" in navigator) {
       navigator.permissions
         .query({ name: "notifications" })

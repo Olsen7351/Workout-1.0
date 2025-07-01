@@ -9,8 +9,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Workout">
+    
     <link id="manifest-link" rel="manifest">
-    <link rel="apple-touch-icon" href="icon.png">
+    <link id="apple-touch-icon-link" rel="apple-touch-icon" href="icon.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -153,6 +154,7 @@
         <div class="bg-gray-800 rounded-2xl p-6 w-full max-w-md space-y-4 shadow-lg"><h2 id="schedule-modal-title" class="text-2xl font-bold">Edit Schedule</h2><div id="schedule-modal-list" class="space-y-2 max-h-64 overflow-y-auto"></div><div class="flex gap-4 mt-4"><button type="button" id="schedule-modal-cancel-btn" class="w-full bg-gray-600 hover:bg-gray-500 p-3 rounded-lg">Cancel</button><button type="button" id="schedule-modal-save-btn" class="w-full bg-green-600 hover:bg-green-500 p-3 rounded-lg">Save</button></div></div>
     </div>
 
+    <script src="script.js"></script>
     <script>
         // Service Worker Registration
         if ('serviceWorker' in navigator) {
@@ -167,6 +169,5 @@
             });
         }
     </script>
-    <script src="script.js"></script>
 </body>
 </html>

@@ -1,6 +1,5 @@
-// --- Main App ---
 document.addEventListener("DOMContentLoaded", () => {
-  const STORAGE_KEY = "workoutCompanionData_v7"; // Incremented version
+  const STORAGE_KEY = "workoutCompanionData_v7";
   const DAYS_OF_WEEK = [
     "Sunday",
     "Monday",
@@ -19,7 +18,6 @@ document.addEventListener("DOMContentLoaded", () => {
       { id: 1, name: "Rest Day", desc: "Recovery is key." },
       { id: 2, name: "Full Body", desc: "Push-ups, Squats, Planks." },
     ],
-    // UPDATED: Schedule now stores objects with id and times
     schedule: {
       Sunday: [{ id: 1, times: 1 }],
       Monday: [{ id: 2, times: 1 }],
@@ -133,6 +131,24 @@ document.addEventListener("DOMContentLoaded", () => {
     new Date(d1).toISOString().split("T")[0] ===
     new Date(d2).toISOString().split("T")[0];
 
+  // NEW: Function to request persistent storage
+  const requestPersistentStorage = async () => {
+    if (navigator.storage && navigator.storage.persist) {
+      try {
+        const isPersisted = await navigator.storage.persisted();
+        console.log(`Storage is currently persisted: ${isPersisted}`);
+        if (!isPersisted) {
+          const result = await navigator.storage.persist();
+          console.log(`Storage persistence request result: ${result}`);
+        }
+      } catch (error) {
+        console.error("Failed to request persistent storage:", error);
+      }
+    } else {
+      console.log("Persistent Storage API not supported by this browser.");
+    }
+  };
+
   const renderAll = () => {
     renderTheme();
     renderStreakAndFreeze();
@@ -239,32 +255,32 @@ document.addEventListener("DOMContentLoaded", () => {
           isCompleted ? "bg-green-800/50" : "bg-gray-700"
         }`;
         el.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <div class="w-5 h-5 flex items-center justify-center rounded-full ${
-                          isCompleted
-                            ? "bg-green-500"
-                            : "border-2 border-gray-500"
-                        }">
-                            ${
-                              isCompleted
-                                ? '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>'
-                                : ""
-                            }
-                        </div>
-                        <div>
-                            <p class="font-semibold">${workout.name}</p>
-                            <p class="text-xs text-gray-400">${
-                              workout.desc || "No description."
-                            }</p>
-                        </div>
-                    </div>
-                    <button data-id="${
-                      workout.id
-                    }" class="log-workout-btn text-xs px-3 py-1 rounded-full disabled:opacity-50 disabled:cursor-not-allowed" ${
+                      <div class="flex items-center gap-3">
+                          <div class="w-5 h-5 flex items-center justify-center rounded-full ${
+                            isCompleted
+                              ? "bg-green-500"
+                              : "border-2 border-gray-500"
+                          }">
+                              ${
+                                isCompleted
+                                  ? '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>'
+                                  : ""
+                              }
+                          </div>
+                          <div>
+                              <p class="font-semibold">${workout.name}</p>
+                              <p class="text-xs text-gray-400">${
+                                workout.desc || "No description."
+                              }</p>
+                          </div>
+                      </div>
+                      <button data-id="${
+                        workout.id
+                      }" class="log-workout-btn text-xs px-3 py-1 rounded-full disabled:opacity-50 disabled:cursor-not-allowed" ${
           isCompleted ? "disabled" : ""
         } style="background-color: ${isCompleted ? "" : "var(--theme-color)"};">
-                        ${isCompleted ? "Done" : "Log"}
-                    </button>`;
+                          ${isCompleted ? "Done" : "Log"}
+                      </button>`;
         dom.todaysExerciseList.appendChild(el);
       }
     });
@@ -464,7 +480,7 @@ document.addEventListener("DOMContentLoaded", () => {
           !isChecked ? "disabled" : ""
         }>
                 <span class="text-xs text-gray-400">time(s)</span>
-            `;
+              `;
         dom.scheduleModalList.appendChild(li);
       });
 
@@ -744,6 +760,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const initializeApp = () => {
+    requestPersistentStorage(); // UPDATED: Request on startup
     setupPWA();
     checkAndResetFreeze();
     checkAndResetStreak();

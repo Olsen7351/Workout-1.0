@@ -1,6 +1,6 @@
 // --- Main App ---
 document.addEventListener("DOMContentLoaded", () => {
-  const STORAGE_KEY = "workoutCompanionData_v6";
+  const STORAGE_KEY = "workoutCompanionData_v7"; // Incremented version
   const DAYS_OF_WEEK = [
     "Sunday",
     "Monday",
@@ -19,20 +19,21 @@ document.addEventListener("DOMContentLoaded", () => {
       { id: 1, name: "Rest Day", desc: "Recovery is key." },
       { id: 2, name: "Full Body", desc: "Push-ups, Squats, Planks." },
     ],
+    // UPDATED: Schedule now stores objects with id and times
     schedule: {
-      Sunday: [1],
-      Monday: [2],
-      Tuesday: [1],
-      Wednesday: [2],
-      Thursday: [1],
-      Friday: [2],
-      Saturday: [1],
+      Sunday: [{ id: 1, times: 1 }],
+      Monday: [{ id: 2, times: 1 }],
+      Tuesday: [{ id: 1, times: 1 }],
+      Wednesday: [{ id: 2, times: 1 }],
+      Thursday: [{ id: 1, times: 1 }],
+      Friday: [{ id: 2, times: 1 }],
+      Saturday: [{ id: 1, times: 1 }],
     },
     nextExerciseId: 3,
     history: [],
     settings: {
       userName: "",
-      themeColor: "#fb923c", // orange-400
+      themeColor: "#fb923c",
       notifications: {
         enabled: false,
         time: "08:00",
@@ -123,8 +124,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("manifest-link").href = URL.createObjectURL(
       new Blob([JSON.stringify(m)], { type: "application/json" })
     );
-    // We link the apple-touch-icon in the HTML now, but you could still set it dynamically if you wanted
-    // document.getElementById('apple-touch-icon-link').href = i192;
   };
 
   const saveData = () =>
@@ -176,20 +175,26 @@ document.addEventListener("DOMContentLoaded", () => {
         ? `Let's get started, ${data.settings.userName}!`
         : `Let's get started!`;
     dom.streakFreezeCount.textContent = data.streakFreeze.count;
+
     const today = new Date();
-    const completedTodayIds = data.history
+    const completedTodayCounts = data.history
       .filter((h) => isSameDay(h.date, today))
-      .map((h) => h.id);
-    const scheduledTodayIds = data.schedule[DAYS_OF_WEEK[today.getDay()]];
-    const allDone = scheduledTodayIds.every(
-      (id) => completedTodayIds.includes(id) || id === 1
-    );
+      .reduce((acc, curr) => {
+        acc[curr.id] = (acc[curr.id] || 0) + 1;
+        return acc;
+      }, {});
+
+    const scheduledToday = data.schedule[DAYS_OF_WEEK[today.getDay()]];
+    const allDone = scheduledToday.every((s) => {
+      if (s.id === 1) return true;
+      const completedCount = completedTodayCounts[s.id] || 0;
+      return completedCount >= s.times;
+    });
+
     const freezeUsed = data.streakFreeze.lastUsed === getTodayStr();
+    const hasLoggedToday = data.history.some((h) => isSameDay(h.date, today));
     dom.useFreezeBtn.disabled =
-      data.streakFreeze.count <= 0 ||
-      allDone ||
-      freezeUsed ||
-      completedTodayIds.length > 0;
+      data.streakFreeze.count <= 0 || allDone || freezeUsed || hasLoggedToday;
     dom.useFreezeBtn.textContent = freezeUsed ? "Used" : "Use";
   };
 
@@ -197,15 +202,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const today = new Date();
     const dayOfWeek = DAYS_OF_WEEK[today.getDay()];
     dom.todayDaySpan.textContent = dayOfWeek;
-    const scheduledIds = data.schedule[dayOfWeek] || [];
-    const completedTodayIds = data.history
+
+    const scheduledWorkouts = data.schedule[dayOfWeek] || [];
+    const completedTodayCounts = data.history
       .filter((h) => isSameDay(h.date, today))
-      .map((h) => h.id);
+      .reduce((acc, curr) => {
+        acc[curr.id] = (acc[curr.id] || 0) + 1;
+        return acc;
+      }, {});
+
     dom.todaysExerciseList.innerHTML = "";
 
     if (
-      scheduledIds.length === 0 ||
-      (scheduledIds.length === 1 && scheduledIds[0] === 1)
+      scheduledWorkouts.length === 0 ||
+      (scheduledWorkouts.length === 1 && scheduledWorkouts[0].id === 1)
     ) {
       const workout = data.exercises.find((e) => e.id === 1);
       dom.todaysExerciseList.innerHTML = `<div class="p-4 rounded-lg text-center bg-gray-700"><p class="font-bold text-lg">${
@@ -216,51 +226,63 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    scheduledIds
-      .filter((id) => id !== 1)
-      .forEach((id) => {
-        const workout = data.exercises.find((e) => e.id === id);
-        if (!workout) return;
-        const isCompleted = completedTodayIds.includes(id);
+    scheduledWorkouts.forEach((scheduledWorkout) => {
+      const workout = data.exercises.find((e) => e.id === scheduledWorkout.id);
+      if (!workout || workout.id === 1) return;
+
+      const completedCount = completedTodayCounts[workout.id] || 0;
+
+      for (let i = 0; i < scheduledWorkout.times; i++) {
+        const isCompleted = i < completedCount;
         const el = document.createElement("div");
         el.className = `p-3 rounded-lg flex items-center justify-between transition-all ${
           isCompleted ? "bg-green-800/50" : "bg-gray-700"
         }`;
         el.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <div class="w-5 h-5 flex items-center justify-center rounded-full ${
-                      isCompleted ? "bg-green-500" : "border-2 border-gray-500"
-                    }">
-                        ${
+                    <div class="flex items-center gap-3">
+                        <div class="w-5 h-5 flex items-center justify-center rounded-full ${
                           isCompleted
-                            ? '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>'
-                            : ""
-                        }
+                            ? "bg-green-500"
+                            : "border-2 border-gray-500"
+                        }">
+                            ${
+                              isCompleted
+                                ? '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>'
+                                : ""
+                            }
+                        </div>
+                        <div>
+                            <p class="font-semibold">${workout.name}</p>
+                            <p class="text-xs text-gray-400">${
+                              workout.desc || "No description."
+                            }</p>
+                        </div>
                     </div>
-                    <div>
-                        <p class="font-semibold">${workout.name}</p>
-                        <p class="text-xs text-gray-400">${
-                          workout.desc || "No description."
-                        }</p>
-                    </div>
-                </div>
-                <button data-id="${id}" class="log-workout-btn text-xs px-3 py-1 rounded-full disabled:opacity-50 disabled:cursor-not-allowed" ${
+                    <button data-id="${
+                      workout.id
+                    }" class="log-workout-btn text-xs px-3 py-1 rounded-full disabled:opacity-50 disabled:cursor-not-allowed" ${
           isCompleted ? "disabled" : ""
         } style="background-color: ${isCompleted ? "" : "var(--theme-color)"};">
-                    ${isCompleted ? "Done" : "Log"}
-                </button>`;
+                        ${isCompleted ? "Done" : "Log"}
+                    </button>`;
         dom.todaysExerciseList.appendChild(el);
-      });
+      }
+    });
   };
 
   const renderSchedule = () => {
     dom.scheduleContainer.innerHTML = "";
     DAYS_OF_WEEK.forEach((day) => {
       const scheduledIds = data.schedule[day] || [];
-      const workoutNames = scheduledIds
-        .map((id) => data.exercises.find((e) => e.id === id)?.name || "")
+      const workoutDetails = scheduledIds
+        .map((s) => {
+          const workout = data.exercises.find((e) => e.id === s.id);
+          if (!workout) return "";
+          return `${workout.name}${s.times > 1 ? ` (${s.times}x)` : ""}`;
+        })
         .filter(Boolean)
         .join(", ");
+
       const el = document.createElement("div");
       el.className = "bg-gray-700 p-3 rounded-lg";
       el.innerHTML = `
@@ -269,7 +291,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <button data-day="${day}" class="edit-schedule-btn text-xs bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded-full">Edit</button>
                 </div>
                 <p class="text-xs text-gray-400 mt-2 truncate">${
-                  workoutNames || "Rest Day"
+                  workoutDetails || "Rest Day"
                 }</p>`;
       dom.scheduleContainer.appendChild(el);
     });
@@ -421,50 +443,82 @@ document.addEventListener("DOMContentLoaded", () => {
     dom.scheduleModalTitle.textContent = `Edit ${day} Schedule`;
     dom.scheduleModalList.innerHTML = "";
     const scheduledIds = data.schedule[day] || [];
+
     data.exercises
       .filter((e) => e.id !== 1)
       .forEach((ex) => {
-        const isChecked = scheduledIds.includes(ex.id);
-        const li = document.createElement("label");
+        const scheduledWorkout = scheduledIds.find((s) => s.id === ex.id);
+        const isChecked = !!scheduledWorkout;
+        const times = isChecked ? scheduledWorkout.times : 1;
+
+        const li = document.createElement("div");
         li.className = "flex items-center gap-3 p-2 bg-gray-700 rounded-lg";
-        li.innerHTML = `<input type="checkbox" data-id="${
-          ex.id
-        }" class="w-5 h-5 rounded bg-gray-900 border-gray-600 focus:ring-orange-600" ${
+        li.innerHTML = `
+                <input type="checkbox" data-id="${
+                  ex.id
+                }" class="schedule-checkbox w-5 h-5 rounded bg-gray-900 border-gray-600 focus:ring-orange-600 shrink-0" ${
           isChecked ? "checked" : ""
-        } style="color: var(--theme-color); --tw-ring-color: var(--theme-color);"><span>${
-          ex.name
-        }</span>`;
+        } style="color: var(--theme-color); --tw-ring-color: var(--theme-color);">
+                <span class="flex-grow font-medium">${ex.name}</span>
+                <input type="number" min="1" max="10" value="${times}" class="schedule-times-input w-16 bg-gray-900 text-center p-1 rounded" ${
+          !isChecked ? "disabled" : ""
+        }>
+                <span class="text-xs text-gray-400">time(s)</span>
+            `;
         dom.scheduleModalList.appendChild(li);
       });
+
+    dom.scheduleModalList
+      .querySelectorAll(".schedule-checkbox")
+      .forEach((cb) => {
+        cb.addEventListener("change", (e) => {
+          const input = e.target
+            .closest("div")
+            .querySelector(".schedule-times-input");
+          input.disabled = !e.target.checked;
+        });
+      });
+
     dom.scheduleModalSaveBtn.dataset.day = day;
     dom.scheduleModal.classList.remove("hidden");
   };
   const closeScheduleModal = () => dom.scheduleModal.classList.add("hidden");
   const handleSaveSchedule = (e) => {
     const day = e.target.dataset.day;
-    const checkedIds = Array.from(
-      dom.scheduleModalList.querySelectorAll("input:checked")
-    ).map((cb) => parseInt(cb.dataset.id));
-    if (checkedIds.length === 0) {
-      data.schedule[day] = [1];
+    const newSchedule = [];
+    dom.scheduleModalList.querySelectorAll("div.flex").forEach((item) => {
+      const checkbox = item.querySelector(".schedule-checkbox");
+      if (checkbox.checked) {
+        const numberInput = item.querySelector(".schedule-times-input");
+        newSchedule.push({
+          id: parseInt(checkbox.dataset.id),
+          times: parseInt(numberInput.value) || 1,
+        });
+      }
+    });
+
+    if (newSchedule.length === 0) {
+      data.schedule[day] = [{ id: 1, times: 1 }];
     } else {
-      data.schedule[day] = checkedIds;
+      data.schedule[day] = newSchedule;
     }
+
     closeScheduleModal();
     saveAndRerender();
   };
 
   const checkAndResetStreak = () => {
     if (!data.lastWorkoutDate) return;
-    const today = new Date(),
-      lastWorkout = new Date(data.lastWorkoutDate);
+    const today = new Date();
+    const lastWorkout = new Date(data.lastWorkoutDate);
     if (isSameDay(today, lastWorkout)) return;
+
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
-    if (
-      !isSameDay(lastWorkout, yesterday) &&
-      data.streakFreeze.lastUsed !== yesterday.toISOString().split("T")[0]
-    ) {
+    const freezeUsedYesterday =
+      data.streakFreeze.lastUsed === yesterday.toISOString().split("T")[0];
+
+    if (!isSameDay(lastWorkout, yesterday) && !freezeUsedYesterday) {
       data.streak = 0;
     }
     saveData();
@@ -483,12 +537,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const handleNotificationPermission = async () => {
     if (!("Notification" in window) || !("serviceWorker" in navigator)) {
-      alert("Push Notifications are not supported in your browser.");
+      alert("Push Notifications are not supported.");
       return;
     }
-    const permission = await Notification.requestPermission();
-    data.settings.notifications.permissionState = permission;
-    if (permission === "granted") {
+    const p = await Notification.requestPermission();
+    data.settings.notifications.permissionState = p;
+    if (p === "granted") {
       data.settings.notifications.enabled = true;
       scheduleDailyNotification();
     } else {
@@ -496,60 +550,46 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     saveAndRerender();
   };
-
   const scheduleDailyNotification = async () => {
     if (
       !data.settings.notifications.enabled ||
       data.settings.notifications.permissionState !== "granted"
     )
       return;
-
-    const registration = await navigator.serviceWorker.ready;
-    const notifications = await registration.getNotifications({
-      tag: "workout-reminder",
-    });
-    notifications.forEach((n) => n.close());
-
-    const [hours, minutes] = data.settings.notifications.time.split(":");
+    const reg = await navigator.serviceWorker.ready;
+    const notifs = await reg.getNotifications({ tag: "workout-reminder" });
+    notifs.forEach((n) => n.close());
+    const [h, m] = data.settings.notifications.time.split(":");
     const now = new Date();
-    let notificationTime = new Date(
+    let notifTime = new Date(
       now.getFullYear(),
       now.getMonth(),
       now.getDate(),
-      hours,
-      minutes
+      h,
+      m
     );
-
-    if (notificationTime < now) {
-      notificationTime.setDate(notificationTime.getDate() + 1);
+    if (notifTime < now) {
+      notifTime.setDate(notifTime.getDate() + 1);
     }
-
-    const dayOfWeek = DAYS_OF_WEEK[notificationTime.getDay()];
-    const scheduledIds = data.schedule[dayOfWeek] || [];
-    const workoutNames = scheduledIds
-      .map((id) => data.exercises.find((e) => e.id === id)?.name)
-      .filter((name) => name && name !== "Rest Day")
+    const day = DAYS_OF_WEEK[notifTime.getDay()];
+    const scheduled = data.schedule[day] || [];
+    const names = scheduled
+      .map((s) => data.exercises.find((e) => e.id === s.id)?.name)
+      .filter((n) => n && n !== "Rest Day")
       .join(", ");
-
-    if (!workoutNames) {
-      console.log(
-        "No workout scheduled for the notification time. Rescheduling for the next valid day."
-      );
+    if (!names) {
       setTimeout(scheduleDailyNotification, 24 * 60 * 60 * 1000);
       return;
     }
-
     const title = `Time for your workout, ${
       data.settings.userName || "champ"
     }!`;
-    const body = `Today's plan: ${workoutNames}. Let's do this! 💪`;
-
-    const delay = notificationTime.getTime() - now.getTime();
-
+    const body = `Today's plan: ${names}. Let's do this! 💪`;
+    const delay = notifTime.getTime() - now.getTime();
     if (delay > 0) {
       setTimeout(() => {
-        navigator.serviceWorker.ready.then((reg) => {
-          reg.showNotification(title, {
+        navigator.serviceWorker.ready.then((r) => {
+          r.showNotification(title, {
             body,
             icon: "./icon.png",
             tag: "workout-reminder",
@@ -557,7 +597,7 @@ document.addEventListener("DOMContentLoaded", () => {
           scheduleDailyNotification();
         });
       }, delay);
-      console.log(`Notification scheduled for ${notificationTime}`);
+      console.log(`Notification for ${names} scheduled at ${notifTime}`);
     } else {
       setTimeout(scheduleDailyNotification, 60000);
     }
@@ -569,26 +609,31 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     dom.todaysExerciseList.addEventListener("click", (e) => {
       const button = e.target.closest(".log-workout-btn");
-      if (button) {
+      if (button && !button.disabled) {
         const workoutId = parseInt(button.dataset.id);
         const workout = data.exercises.find((ex) => ex.id === workoutId);
         const today = new Date();
         const firstLogToday = !data.history.some((h) =>
           isSameDay(h.date, today)
         );
+
         if (firstLogToday) {
           const yesterday = new Date();
           yesterday.setDate(today.getDate() - 1);
+          const freezeUsedYesterday =
+            data.streakFreeze.lastUsed ===
+            yesterday.toISOString().split("T")[0];
           if (
             data.lastWorkoutDate &&
-            isSameDay(data.lastWorkoutDate, yesterday)
+            (isSameDay(data.lastWorkoutDate, yesterday) || freezeUsedYesterday)
           ) {
             data.streak++;
           } else {
             data.streak = 1;
           }
-          data.lastWorkoutDate = today.toISOString();
         }
+
+        data.lastWorkoutDate = today.toISOString();
         data.history.push({
           id: workoutId,
           name: workout.name,
@@ -599,9 +644,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
     dom.useFreezeBtn.addEventListener("click", () => {
-      data.streakFreeze.count--;
-      data.streakFreeze.lastUsed = getTodayStr();
-      saveAndRerender();
+      if (data.streakFreeze.count > 0) {
+        data.streakFreeze.count--;
+        data.streakFreeze.lastUsed = getTodayStr();
+        data.streak++;
+        saveAndRerender();
+      }
     });
     dom.scheduleContainer.addEventListener("click", (e) => {
       if (e.target.classList.contains("edit-schedule-btn")) {
@@ -623,8 +671,9 @@ document.addEventListener("DOMContentLoaded", () => {
         ) {
           data.exercises = data.exercises.filter((x) => x.id !== id);
           for (const d in data.schedule) {
-            data.schedule[d] = data.schedule[d].filter((i) => i !== id);
-            if (data.schedule[d].length === 0) data.schedule[d] = [1];
+            data.schedule[d] = data.schedule[d].filter((s) => s.id !== id);
+            if (data.schedule[d].length === 0)
+              data.schedule[d] = [{ id: 1, times: 1 }];
           }
           saveAndRerender();
         }
@@ -654,43 +703,39 @@ document.addEventListener("DOMContentLoaded", () => {
       scheduleDailyNotification();
     });
     dom.exportDataBtn.addEventListener("click", () => {
-      const dataStr = JSON.stringify(data, null, 2);
-      const blob = new Blob([dataStr], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
+      const d = JSON.stringify(data, null, 2);
+      const b = new Blob([d], { type: "application/json" });
+      const u = URL.createObjectURL(b);
       const a = document.createElement("a");
-      a.href = url;
-      a.download = `workout-companion-backup-${getTodayStr()}.json`;
+      a.href = u;
+      a.download = `workout-backup-${getTodayStr()}.json`;
       a.click();
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(u);
     });
     dom.importDataBtn.addEventListener("click", () =>
       dom.importFileInput.click()
     );
     dom.importFileInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (event) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = (ev) => {
         try {
-          const importedData = JSON.parse(event.target.result);
-          if (confirm("This will overwrite all current data. Are you sure?")) {
-            data = { ...getDefaultData(), ...importedData };
+          const i = JSON.parse(ev.target.result);
+          if (confirm("Overwrite all current data?")) {
+            data = { ...getDefaultData(), ...i };
             saveAndRerender();
-            alert("Data imported successfully!");
+            alert("Import successful!");
           }
         } catch (err) {
-          alert("Error importing file. Make sure it's a valid backup file.");
+          alert("Error importing file.");
         }
       };
-      reader.readAsText(file);
+      r.readAsText(f);
       e.target.value = "";
     });
     dom.resetAppBtn.addEventListener("click", () => {
-      if (
-        confirm(
-          "Are you sure you want to reset all app data? This cannot be undone."
-        )
-      ) {
+      if (confirm("Reset all app data? This cannot be undone.")) {
         data = getDefaultData();
         saveAndRerender();
         alert("App data has been reset.");
@@ -705,15 +750,13 @@ document.addEventListener("DOMContentLoaded", () => {
     setupEventListeners();
     renderAll();
     if ("permissions" in navigator) {
-      navigator.permissions
-        .query({ name: "notifications" })
-        .then((permissionStatus) => {
-          data.settings.notifications.permissionState = permissionStatus.state;
-          saveAndRerender();
-          if (permissionStatus.state === "granted") {
-            scheduleDailyNotification();
-          }
-        });
+      navigator.permissions.query({ name: "notifications" }).then((p) => {
+        data.settings.notifications.permissionState = p.state;
+        saveAndRerender();
+        if (p.state === "granted") {
+          scheduleDailyNotification();
+        }
+      });
     }
   };
 

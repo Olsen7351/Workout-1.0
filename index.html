@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Workout Companion</title>
+
+    <meta name="theme-color" content="#111827">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Workout">
+    <link id="manifest-link" rel="manifest">
+    <link id="apple-touch-icon-link" rel="apple-touch-icon">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-900 text-white antialiased pt-20">
+    <nav class="fixed top-0 left-0 right-0 bg-gray-800 border-b border-gray-700 shadow-lg z-40">
+        <div class="flex justify-around max-w-4xl mx-auto">
+            <button data-page="today" class="nav-btn flex-1 flex flex-col items-center justify-center p-3 text-gray-400 active">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <span class="text-xs font-medium">Today</span>
+            </button>
+            <button data-page="plan" class="nav-btn flex-1 flex flex-col items-center justify-center p-3 text-gray-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+                <span class="text-xs font-medium">Plan</span>
+            </button>
+            <button data-page="history" class="nav-btn flex-1 flex flex-col items-center justify-center p-3 text-gray-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                <span class="text-xs font-medium">History</span>
+            </button>
+            <button data-page="stats" class="nav-btn flex-1 flex flex-col items-center justify-center p-3 text-gray-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                <span class="text-xs font-medium">Stats</span>
+            </button>
+            <button data-page="settings" class="nav-btn flex-1 flex flex-col items-center justify-center p-3 text-gray-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <span class="text-xs font-medium">Settings</span>
+            </button>
+        </div>
+    </nav>
+    
+    <canvas id="confetti-canvas"></canvas>
+
+    <div class="container mx-auto max-w-4xl p-4">
+        <div id="page-today" class="page active">
+            <header class="text-center mb-6">
+                <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500" id="today-header" style="--tw-gradient-from: var(--theme-color)">
+                    Today's Plan
+                </h1>
+                <p id="motivational-quote" class="text-gray-400 mt-2 text-sm italic">"Loading motivation..."</p>
+            </header>
+            <div class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <section class="bg-gray-800 rounded-2xl p-6 text-center shadow-lg flex flex-col justify-center items-center">
+                        <h2 class="text-lg font-semibold mb-2" style="color: var(--theme-color);">Current Streak</h2>
+                        <div class="flex items-center justify-center space-x-4">
+                            <div id="streak-display" class="text-7xl font-black text-white">0</div>
+                            <div class="text-7xl" style="filter: drop-shadow(0 0 10px rgba(255,165,0,0.7));">🔥</div>
+                        </div>
+                        <p id="streak-message" class="text-gray-500 mt-2 text-sm">Let's get started!</p>
+                        <div class="mt-4">
+                            <h3 class="text-xs font-semibold text-blue-400">STREAK FREEZE</h3>
+                            <p class="text-2xl font-bold" id="streak-freeze-count">0</p>
+                            <button id="use-freeze-btn" class="text-xs bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded-full mt-1 disabled:bg-gray-600">Use</button>
+                        </div>
+                    </section>
+                    <section class="bg-gray-800 rounded-2xl p-6 shadow-lg">
+                        <h2 class="text-xl font-bold mb-4">Today (<span id="today-day"></span>)</h2>
+                        <div id="todays-exercise-list" class="space-y-3"></div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-plan" class="page">
+            <header class="text-center mb-6"><h1 class="text-3xl font-bold">Plan & Workouts</h1><p class="text-gray-400 mt-2 text-sm">Organize your week and manage your exercises.</p></header>
+            <div class="space-y-6">
+                <section class="bg-gray-800 rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-xl font-bold mb-4">Weekly Schedule</h2>
+                    <div id="schedule-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                </section>
+                <section class="bg-gray-800 rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-xl font-bold mb-4">My Workouts</h2>
+                    <div id="custom-exercise-list" class="space-y-2 max-h-64 overflow-y-auto pr-2"></div>
+                    <button id="add-new-workout-btn" class="w-full mt-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Add New Workout</button>
+                </section>
+            </div>
+        </div>
+
+        <div id="page-history" class="page">
+            <header class="text-center mb-6"><h1 class="text-3xl font-bold">Workout History</h1><p class="text-gray-400 mt-2 text-sm">A log of all your completed sessions.</p></header>
+            <section class="bg-gray-800 rounded-2xl p-6 shadow-lg"><div id="history-list" class="space-y-3 max-h-[70vh] overflow-y-auto"></div></section>
+        </div>
+
+        <div id="page-stats" class="page">
+            <header class="text-center mb-6"><h1 class="text-3xl font-bold">My Stats</h1><p class="text-gray-400 mt-2 text-sm">Visualize your progress and consistency.</p></header>
+            <div class="space-y-6">
+                <section class="bg-gray-800 rounded-2xl p-6 shadow-lg"><h2 class="text-xl font-bold mb-4">Activity Heatmap</h2><div id="heatmap-container" class="p-2 bg-gray-900 rounded-lg overflow-x-auto"></div></section>
+                <section class="bg-gray-800 rounded-2xl p-6 shadow-lg"><h2 class="text-xl font-bold mb-4">Workout Distribution</h2><div id="distribution-chart-container"></div></section>
+            </div>
+        </div>
+
+        <div id="page-settings" class="page">
+            <header class="text-center mb-6"><h1 class="text-3xl font-bold">Settings</h1><p class="text-gray-400 mt-2 text-sm">Customize your app experience.</p></header>
+            <div class="space-y-6">
+                <section class="bg-gray-800 rounded-2xl p-6 shadow-lg space-y-4">
+                    <h2 class="text-xl font-bold mb-2">Personalization</h2>
+                    <div>
+                        <label for="user-name" class="block mb-2 text-sm font-medium text-gray-300">Your Name</label>
+                        <input type="text" id="user-name" placeholder="Enter your name" class="w-full bg-gray-700 p-3 rounded-lg focus:ring-2 focus:ring-orange-500" style="--tw-ring-color: var(--theme-color);">
+                    </div>
+                    <div>
+                        <label for="theme-color" class="block mb-2 text-sm font-medium text-gray-300">Theme Color</label>
+                        <input type="color" id="theme-color-input" class="w-full h-10 p-1 bg-gray-700 rounded-lg cursor-pointer">
+                    </div>
+                </section>
+                <section class="bg-gray-800 rounded-2xl p-6 shadow-lg space-y-4">
+                    <h2 class="text-xl font-bold mb-2">Notifications</h2>
+                    <div class="flex items-center justify-between">
+                        <span class="font-medium">Enable Reminders</span>
+                        <button id="enable-notifications-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-600"></button>
+                    </div>
+                    <div>
+                        <label for="notification-time" class="block mb-2 text-sm font-medium text-gray-300">Remind me at</label>
+                        <input type="time" id="notification-time" class="w-full bg-gray-700 p-3 rounded-lg focus:ring-2 focus:ring-orange-500" style="--tw-ring-color: var(--theme-color);">
+                    </div>
+                </section>
+                <section class="bg-gray-800 rounded-2xl p-6 shadow-lg space-y-4">
+                    <h2 class="text-xl font-bold mb-2">Data Management</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <button id="export-data-btn" class="w-full bg-green-600 hover:bg-green-500 p-3 rounded-lg">Export Data</button>
+                        <button id="import-data-btn" class="w-full bg-yellow-500 hover:bg-yellow-400 text-gray-900 p-3 rounded-lg">Import Data</button>
+                        <input type="file" id="import-file-input" class="hidden" accept=".json">
+                    </div>
+                    <button id="reset-app-btn" class="w-full mt-4 bg-red-600 hover:bg-red-500 p-3 rounded-lg">Reset App Data</button>
+                </section>
+            </div>
+        </div>
+    </div>
+    
+    <div id="workout-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-gray-800 rounded-2xl p-6 w-full max-w-md space-y-4 shadow-lg"><h2 id="modal-title" class="text-2xl font-bold">Add New Workout</h2><form id="workout-form"><input type="hidden" id="workout-id"><input type="text" id="workout-name" placeholder="Workout Name" class="w-full bg-gray-700 p-3 rounded-lg focus:ring-2 focus:ring-orange-500" required style="--tw-ring-color: var(--theme-color);"><textarea id="workout-desc" placeholder="Description (e.g., 3x10 Squats, 3x12 Lunges...)" class="w-full bg-gray-700 p-3 rounded-lg mt-4 h-32 focus:ring-2 focus:ring-orange-500" style="--tw-ring-color: var(--theme-color);"></textarea><div class="flex gap-4 mt-4"><button type="button" id="modal-cancel-btn" class="w-full bg-gray-600 hover:bg-gray-500 p-3 rounded-lg">Cancel</button><button type="submit" class="w-full bg-green-600 hover:bg-green-500 p-3 rounded-lg">Save</button></div></form></div>
+    </div>
+    
+    <div id="schedule-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-gray-800 rounded-2xl p-6 w-full max-w-md space-y-4 shadow-lg"><h2 id="schedule-modal-title" class="text-2xl font-bold">Edit Schedule</h2><div id="schedule-modal-list" class="space-y-2 max-h-64 overflow-y-auto"></div><div class="flex gap-4 mt-4"><button type="button" id="schedule-modal-cancel-btn" class="w-full bg-gray-600 hover:bg-gray-500 p-3 rounded-lg">Cancel</button><button type="button" id="schedule-modal-save-btn" class="w-full bg-green-600 hover:bg-green-500 p-3 rounded-lg">Save</button></div></div>
+    </div>
+
+    <script>
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
+            });
+        }
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>

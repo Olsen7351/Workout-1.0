@@ -1,0 +1,15 @@
+:root { --theme-color: #fb923c; } /* orange-400 */
+body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+.page { display: none; animation: fadeIn 0.3s ease-in-out; }
+.page.active { display: block; }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.nav-btn.active { color: var(--theme-color); }
+#confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
+.heatmap-cell { width: 12px; height: 12px; background-color: #374151; border-radius: 2px; }
+.heatmap-cell[data-level="1"] { background-color: #3b82f6; } /* blue-500 */
+.heatmap-cell[data-level="2"] { background-color: #22c55e; } /* green-500 */
+.heatmap-cell[data-level="3"] { background-color: var(--theme-color); }
+.heatmap-cell[data-level="4"] { background-color: #ef4444; } /* red-500 */
